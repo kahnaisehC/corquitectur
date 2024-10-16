@@ -4,16 +4,20 @@
 <head>
     <meta charset="utf-8">
     <title>Single file upload</title>
+    <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
 <h1>Upload single file with fields</h1>
 
-<form action="/upload" method="post" enctype="multipart/form-data">
-    Name: <input type="text" name="name"><br>
-    Email: <input type="email" name="email"><br>
-    Files: <input type="file" name="file"><br><br>
-    <input type="submit" value="Submit">
+<form action="/upload" method="post" enctype="multipart/form-data" >
+    Files: <input id="fileInput" type="file" name="file" accept=".csv">
+    <div class="selectDiv" id="selectDiv">
+
+    </div>
+    <input type="submit" value="Submit" >
 </form>
 </body>
+<script src="main.js">
+</script>
 </html>
 {{end}}

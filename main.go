@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"fmt"
 	"html/template"
 	"io"
@@ -38,10 +39,15 @@ func upload(c echo.Context) error {
 	values := make(map[string]string)
 	values["Name"] = name
 	values["Email"] = email
+
 	file, err := c.FormFile("file")
+
 	if err != nil {
 		return err
 	}
+	fmt.Println("Filename or somthing")
+	fmt.Println(file.Filename + " ")
+	fmt.Println()
 	src, err := file.Open()
 	if err != nil {
 		return err
@@ -55,9 +61,33 @@ func upload(c echo.Context) error {
 	}
 	defer dst.Close()
 
-	if _, err = io.Copy(dst, src); err != nil {
-		return err
+	csvFile := csv.NewReader(src)
+	fmt.Println("Uploaded csv file in question!!!!!!")
+	row, err := csvFile.Read()
+	if err != nil {
+		panic(err)
 	}
+	fmt.Println(row)
+	row, err = csvFile.Read()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(row)
+	row, err = csvFile.Read()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(row)
+	for row, err := csvFile.Read(); err != io.EOF; row, err = csvFile.Read() {
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(row)
+	}
+	// src.Seek(0, io.SeekStart)
+	// if _, err = io.Copy(dst, src); err != nil {
+	// 	return err
+	// }
 
 	return SuccessfullUpload(c, &values)
 
