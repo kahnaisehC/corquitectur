@@ -9,7 +9,7 @@ options.set("decimal", {
         "commapos": 2
 })
 options.set("varchar", {
-    "length": 50,
+    "len": 50,
     "regex": ""
 })
 
@@ -23,35 +23,45 @@ function updateTypeParams(header){
     switch(columnType.value){
         case "varchar":{
             let varcharLengthInput = document.createElement("input")
+            varcharLengthInput.required = true
             varcharLengthInput.type = "number"
             varcharLengthInput.name = "varcharLength_"+header
             varcharLengthInput.id= "varcharLength_"+header
+            varcharLengthInput.value = options.get("varchar").len
             columnTypeParamsDiv.append(varcharLengthInput)
             break;
         }
         case "decimal":{
             let amountOfDigits = document.createElement("input")
+            amountOfDigits.required = true
             amountOfDigits.type = "number"
             amountOfDigits.name = "amountOfDigits_"+header
             amountOfDigits.id = "amountOfDigits_"+header
+            amountOfDigits.value = options.get("decimal").digits
             columnTypeParamsDiv.append(amountOfDigits)
+
             let commaPosition= document.createElement("input")
             commaPosition.type = "number"
-            commaPosition.name = "amountOfDigits_"+header
-            commaPosition.id = "amountOfDigits_"+header
+            commaPosition.name = "commaPosition_"+header
+            commaPosition.id = "commaPosition_"+header
+            commaPosition.value = options.get("decimal").commapos
             columnTypeParamsDiv.append(commaPosition)
             break
         }
         case "integer":{
             let lowerBound = document.createElement("input")
+            lowerBound.required = true
             lowerBound.type = "number"
             lowerBound.name = "lowerBound_"+header
             lowerBound.id = "lowerBound_"+header
+            lowerBound.value = 1 
             columnTypeParamsDiv.append(lowerBound)
+
             let upperBound= document.createElement("input")
             upperBound.type = "number"
             upperBound.name = "lowerBound_"+header
             upperBound.id = "lowerBound_"+header
+            upperBound.value = 100
             columnTypeParamsDiv.append(upperBound)
         }
     }
@@ -77,7 +87,7 @@ fileInput.addEventListener("input", function(){
         let headers = headersString.split(",")
         
         let fieldInputList = document.getElementById("selectDiv")
-
+        fieldInputList.innerHTML = ""
         for(let i = 0; i < headers.length; i++){
             let header = headers[i].trim()
             let fieldInputDiv = document.createElement("div")
