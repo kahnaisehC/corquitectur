@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -33,62 +34,47 @@ func SuccessfullUpload(c echo.Context, vals *map[string]string) error {
 	return c.Render(http.StatusOK, "successfullUpload", vals)
 }
 
-func upload(c echo.Context) error {
-	name := c.FormValue("name")
-	email := c.FormValue("email")
+func upload(c echo.Context, db *sql.DB) error {
 	values := make(map[string]string)
-	values["Name"] = name
-	values["Email"] = email
 
 	file, err := c.FormFile("file")
+	if err != nil {
+		panic(err)
+	}
+	src, err := file.Open()
 
 	if err != nil {
-		return err
-	}
-	fmt.Println("Filename or somthing")
-	fmt.Println(file.Filename + " ")
-	fmt.Println()
-	src, err := file.Open()
-	if err != nil {
-		return err
+		panic(err)
 	}
 
 	defer src.Close()
 
-	dst, err := os.Create(file.Filename)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
-
 	csvFile := csv.NewReader(src)
-	fmt.Println("Uploaded csv file in question!!!!!!")
-	row, err := csvFile.Read()
+	headers, err := csvFile.Read()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(row)
-	row, err = csvFile.Read()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(row)
-	row, err = csvFile.Read()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(row)
-	for row, err := csvFile.Read(); err != io.EOF; row, err = csvFile.Read() {
-		if err != nil {
-			panic(err)
+	tableName := strings.TrimSuffix(file.Filename, ".csv")
+	query := "CREATE TABLE " + tableName + "("
+	for i, header := range headers {
+		header = strings.TrimSpace(header)
+		fmt.Println(header)
+		columnType := c.FormValue("select" + header)
+		columnName := c.FormValue("input" + header)
+		fmt.Println(columnName + ": " + columnType)
+		query += columnName + " " + columnType
+		if i != len(headers)-1 {
+			query += ","
 		}
-		fmt.Println(row)
 	}
-	// src.Seek(0, io.SeekStart)
-	// if _, err = io.Copy(dst, src); err != nil {
-	// 	return err
-	// }
+	query += ")"
 
+	// create table with headers
+
+	// _, err = db.Exec(query)
+	// if err != nil {
+	// 	panic(err)
+	// }
 	return SuccessfullUpload(c, &values)
 
 }
@@ -131,7 +117,9 @@ func main() {
 	e.Renderer = t
 
 	e.GET("/", Index)
-	e.POST("/upload", upload)
+	e.POST("/upload", func(c echo.Context) error {
+		return upload(c, db)
+	})
 	e.Logger.Fatal(e.Start(":3000"))
 
 }
