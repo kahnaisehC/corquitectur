@@ -27,6 +27,174 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
+// TODO: corregir cuando el estupido pone comillas en el header
+// TODO: numeric truncates value
+func cleanString(s string) string {
+	output := ""
+	for _, char := range s {
+		if char <= '~' {
+			output = fmt.Sprint(output + string(char))
+		}
+	}
+	fmt.Println(output)
+	return output
+}
+
+func JSONTable(c echo.Context, db *sql.DB) error {
+	tableName := c.Param("tableName")
+
+	tableHeaders := make(map[string][]string, 0)
+	// TODO: optimize for database queries
+	tableHeadersQuery := "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "'"
+	tableHeadersRows, err := db.Query(tableHeadersQuery)
+	if err != nil {
+		panic(err)
+	}
+	defer tableHeadersRows.Close()
+	tableHeaders[tableName] = make([]string, 0)
+	for tableHeadersRows.Next() {
+		var header string
+		if err := tableHeadersRows.Scan(&header); err != nil {
+			log.Fatal(err)
+		}
+		tableHeaders[tableName] = append(tableHeaders[tableName], header)
+	}
+
+	tableValues := make(map[string]map[string][]string, 0)
+	tableValues[tableName] = make(map[string][]string)
+	for _, tableHeader := range tableHeaders[tableName] {
+		tableValues[tableName][tableHeader] = make([]string, 0)
+		tableValueQuery := "SELECT " + tableHeader + " FROM " + tableName
+		tableValueRow, err := db.Query(tableValueQuery)
+		if err != nil {
+			panic(err)
+		}
+		defer tableValueRow.Close()
+		for tableValueRow.Next() {
+			var tableValue string
+			if err = tableValueRow.Scan(&tableValue); err != nil {
+				panic(err)
+			}
+			tableValues[tableName][tableHeader] = append(tableValues[tableName][tableHeader], tableValue)
+		}
+
+	}
+	return c.JSON(http.StatusOK, tableValues)
+}
+
+func Table(c echo.Context, db *sql.DB) error {
+	tableName := c.Param("tableName")
+
+	tableHeaders := make(map[string][]string, 0)
+	// TODO: optimize for database queries
+	tableHeadersQuery := "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "'"
+	tableHeadersRows, err := db.Query(tableHeadersQuery)
+	if err != nil {
+		panic(err)
+	}
+	defer tableHeadersRows.Close()
+	tableHeaders[tableName] = make([]string, 0)
+	for tableHeadersRows.Next() {
+		var header string
+		if err := tableHeadersRows.Scan(&header); err != nil {
+			log.Fatal(err)
+		}
+		tableHeaders[tableName] = append(tableHeaders[tableName], header)
+	}
+
+	tableValues := make(map[string]map[string][]string, 0)
+	tableValues[tableName] = make(map[string][]string)
+	for _, tableHeader := range tableHeaders[tableName] {
+		tableValues[tableName][tableHeader] = make([]string, 0)
+		tableValueQuery := "SELECT " + tableHeader + " FROM " + tableName
+		tableValueRow, err := db.Query(tableValueQuery)
+		if err != nil {
+			panic(err)
+		}
+		defer tableValueRow.Close()
+		for tableValueRow.Next() {
+			var tableValue string
+			if err = tableValueRow.Scan(&tableValue); err != nil {
+				panic(err)
+			}
+			tableValues[tableName][tableHeader] = append(tableValues[tableName][tableHeader], tableValue)
+		}
+
+	}
+	return c.Render(http.StatusOK, "table", tableValues)
+}
+
+func Tables(c echo.Context, db *sql.DB) error {
+	tableNamesQuery := "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+	tableNamesRows, err := db.Query(tableNamesQuery)
+	if err != nil {
+		panic(err)
+	}
+	defer tableNamesRows.Close()
+
+	tableNames := make([]string, 0)
+
+	for tableNamesRows.Next() {
+		var table string
+		if err := tableNamesRows.Scan(&table); err != nil {
+			log.Fatal(err)
+		}
+		tableNames = append(tableNames, table)
+	}
+	if err := tableNamesRows.Err(); err != nil {
+		panic(err)
+	}
+	fmt.Println(tableNames)
+	tableHeaders := make(map[string][]string, 0)
+	// TODO: optimize for database queries
+	for _, tableName := range tableNames {
+		tableHeadersQuery := "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "'"
+		tableHeadersRows, err := db.Query(tableHeadersQuery)
+		if err != nil {
+			panic(err)
+		}
+		defer tableHeadersRows.Close()
+		tableHeaders[tableName] = make([]string, 0)
+		for tableHeadersRows.Next() {
+			var header string
+			if err := tableHeadersRows.Scan(&header); err != nil {
+				log.Fatal(err)
+			}
+			tableHeaders[tableName] = append(tableHeaders[tableName], header)
+		}
+
+	}
+	tableValues := make(map[string]map[string][]string, 0)
+	for _, tableName := range tableNames {
+		tableValues[tableName] = make(map[string][]string)
+		for _, tableHeader := range tableHeaders[tableName] {
+			tableValues[tableName][tableHeader] = make([]string, 0)
+			tableValueQuery := "SELECT " + tableHeader + " FROM " + tableName
+			tableValueRow, err := db.Query(tableValueQuery)
+			if err != nil {
+				panic(err)
+			}
+			defer tableValueRow.Close()
+			for tableValueRow.Next() {
+				var tableValue string
+				if err = tableValueRow.Scan(&tableValue); err != nil {
+					panic(err)
+				}
+				tableValues[tableName][tableHeader] = append(tableValues[tableName][tableHeader], tableValue)
+			}
+		}
+
+	}
+
+	data := map[string]any{
+		"tableNames":   tableNames,
+		"tableHeaders": tableHeaders,
+		"tableValues":  tableValues,
+	}
+
+	return c.Render(http.StatusOK, "tables", data)
+}
+
 func Index(c echo.Context) error {
 	return c.Render(http.StatusOK, "index", "World")
 }
@@ -40,11 +208,34 @@ func upload(c echo.Context, db *sql.DB) error {
 		"varchar": func(varchar string, length int) bool {
 			return len(varchar) <= length
 		},
-		"decimal": func(amountOfDigits, commaPosition int) bool {
+		"decimal": func(value string, amountOfDigits, commaPosition int) bool {
+			if commaPosition > 0 {
+				if value[len(value)-1-commaPosition] != ',' {
+					return false
+				}
+
+			} else if commaPosition < 0 {
+				if len(value)-commaPosition >= amountOfDigits {
+					return false
+				}
+				for i := len(value) - commaPosition; i < len(value); i++ {
+					if value[i] != '0' {
+						return false
+					}
+				}
+			} else {
+				if len(value) > amountOfDigits {
+					return false
+				}
+			}
 			return true
 		},
-		"integer": func(lowerBound, upperBound int) bool {
-			return true
+		"integer": func(value string, lowerBound, upperBound int) bool {
+			n, err := strconv.Atoi(value)
+			if err != nil {
+				return false
+			}
+			return n >= lowerBound && n <= upperBound
 		},
 	}
 
@@ -67,11 +258,17 @@ func upload(c echo.Context, db *sql.DB) error {
 	if err != nil {
 		panic(err)
 	}
+	for i := 0; i < len(headers); i++ {
+		headers[i] = cleanString(headers[i])
+
+	}
 	tableName := strings.TrimSuffix(file.Filename, ".csv")
 	query := "CREATE TABLE IF NOT EXISTS " + tableName + "("
 	insertTemplate := "INSERT INTO " + tableName + "("
 	for i, header := range headers {
+
 		header = strings.TrimSpace(header)
+		fmt.Println(header)
 		columnName := c.FormValue("columnName_" + header)
 		columnType := c.FormValue("columnType_" + header)
 
@@ -133,15 +330,37 @@ func upload(c echo.Context, db *sql.DB) error {
 						panic(err)
 					}
 					if typeToCheck[columnType].(func(string, int, int) bool)(columnValue, digits, comma) {
-
+						stringRow += "'" + columnValue + "'"
+					} else {
+						rowIsBroken = true
+						break
 					}
 
 				}
 			case "integer":
 				{
+					lowerBound := c.FormValue("lowerBound_" + header)
+					upperBound := c.FormValue("upperBound_" + header)
+
+					lowerBoundNumber, err := strconv.Atoi(lowerBound)
+					if err != nil {
+						panic(err)
+					}
+
+					upperBoundNumber, err := strconv.Atoi(upperBound)
+					if err != nil {
+						panic(err)
+					}
+					if typeToCheck[columnType].(func(string, int, int) bool)(columnValue, lowerBoundNumber, upperBoundNumber) {
+						stringRow += "'" + columnValue + "'"
+					} else {
+						rowIsBroken = true
+						break
+					}
 
 				}
 			}
+			// TODO handle RowIsBroken
 			if i != len(headers)-1 {
 				stringRow += ","
 			}
@@ -149,6 +368,9 @@ func upload(c echo.Context, db *sql.DB) error {
 		i++
 		if !rowIsBroken {
 			db.Exec(insertTemplate + stringRow + ")")
+		} else {
+			fmt.Println("This row is broken: ")
+			fmt.Println(row)
 		}
 
 	}
@@ -205,6 +427,16 @@ func main() {
 	e.POST("/upload", func(c echo.Context) error {
 		return upload(c, db)
 	})
+	e.GET("/tables", func(c echo.Context) error {
+		return Tables(c, db)
+	})
+	e.GET("/table/:tableName", func(c echo.Context) error {
+		return Table(c, db)
+	})
+	e.GET("/table/api/:tableName", func(c echo.Context) error {
+		return JSONTable(c, db)
+	})
+
 	e.Logger.Fatal(e.Start(":3000"))
 
 }

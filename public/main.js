@@ -12,14 +12,22 @@ options.set("varchar", {
     "len": 50,
     "regex": ""
 })
+// TODO: comillas idiotas eso
+function cleanString(input){
+    let output = ""
+    for(let i = 0; i < input.length; i++){
+        if (input.charCodeAt(i) < 127){
+            output += input.charAt(i);
+        }
+    }
+    return output
+}
 
 function updateTypeParams(header){
     let fieldInputDiv = document.getElementById(header)
     let columnType = document.getElementById("columnType_"+header)
     let columnTypeParamsDiv = document.getElementById("columnTypeParamsDiv_"+header)
-    console.log("columnTypeParamsDiv_"+header)
     columnTypeParamsDiv.innerHTML = ""
-    console.log(columnType)
     switch(columnType.value){
         case "varchar":{
             let varcharLengthInput = document.createElement("input")
@@ -59,8 +67,8 @@ function updateTypeParams(header){
 
             let upperBound= document.createElement("input")
             upperBound.type = "number"
-            upperBound.name = "lowerBound_"+header
-            upperBound.id = "lowerBound_"+header
+            upperBound.name = "upperBound_"+header
+            upperBound.id = "upperBound_"+header
             upperBound.value = 100
             columnTypeParamsDiv.append(upperBound)
         }
@@ -85,6 +93,9 @@ fileInput.addEventListener("input", function(){
         }
 
         let headers = headersString.split(",")
+        for(let i = 0; i < headers.length; i++){
+            headers[i] = cleanString(headers[i])
+        }
         
         let fieldInputList = document.getElementById("selectDiv")
         fieldInputList.innerHTML = ""

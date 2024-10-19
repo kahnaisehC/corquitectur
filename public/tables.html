@@ -1,0 +1,12 @@
+{{define "tables"}}
+    <h1>Hello! </h1>
+    {{range $val := .tableNames}}
+        <p>{{$val}}</p>
+    {{end}}
+    {{range $val := .tableHeaders}}
+        <p>{{$val}}</p>
+    {{end}}
+    {{range $val := .tableValues}}
+        <p>{{$val}}</p>
+    {{end}}
+{{end}}
