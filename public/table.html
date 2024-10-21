@@ -1,3 +1,40 @@
 {{define "table"}}
-<p>{{.}}</p>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Corquitecture</title>
+</head>
+<body>
+    {{$colLength := 0}}
+    {{$rowLength := len .}}
+    {{range $table := .}}
+    {{$colLength = len $table}}
+    {{range $col := $table}}
+    {{$rowLength = len $col}}
+    {{end}}
+    {{end}}
+    <div style="display: grid; 
+                grid-template-columns: repeat({{$colLength}}, auto);
+                grid-template-rows: repeat({{$rowLength}}, auto);
+                grid-auto-flow: column;
+                ">
+    {{range $table := .}}
+    {{range $column := $table }}
+        {{range $elem := $column}}
+        <div style="padding: 0.25rem;
+                    border: solid black 0.05rem;">
+                {{if $elem}}
+                    {{$elem}}
+                {{else}}
+                    NULL
+                {{end}}
+            {{$elem}}
+        </div>
+        {{end}}
+    {{end}}
+    {{end}}
+</div>
+</body>
+</html>
 {{end}}
