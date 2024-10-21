@@ -1,12 +1,11 @@
 {{define "tables"}}
-    <h1>Hello! </h1>
     {{range $val := .tableNames}}
-        <p>{{$val}}</p>
+        <a href="/table/{{$val}}">{{$val}}</a>
     {{end}}
-    {{range $val := .tableHeaders}}
+    <!-- {{range $val := .tableHeaders}}
         <p>{{$val}}</p>
     {{end}}
     {{range $val := .tableValues}}
         <p>{{$val}}</p>
-    {{end}}
+    {{end}} -->
 {{end}}
