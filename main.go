@@ -85,42 +85,53 @@ func JSONTable(c echo.Context, db *sql.DB) error {
 func Table(c echo.Context, db *sql.DB) error {
 	tableName := c.Param("tableName")
 
-	tableHeaders := make(map[string][]string, 0)
-	// TODO: optimize for database queries
 	tableHeadersQuery := "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "'"
 	tableHeadersRows, err := db.Query(tableHeadersQuery)
 	if err != nil {
 		panic(err)
 	}
 	defer tableHeadersRows.Close()
-	tableHeaders[tableName] = make([]string, 0)
+
+	tableHeaders := make([]string, 0)
 	for tableHeadersRows.Next() {
 		var header string
 		if err := tableHeadersRows.Scan(&header); err != nil {
 			log.Fatal(err)
 		}
-		tableHeaders[tableName] = append(tableHeaders[tableName], header)
+		tableHeaders = append(tableHeaders, header)
+
 	}
 
-	tableValues := make(map[string]map[string][]string, 0)
-	tableValues[tableName] = make(map[string][]string)
-	for _, tableHeader := range tableHeaders[tableName] {
-		tableValues[tableName][tableHeader] = make([]string, 0)
-		tableValueQuery := "SELECT " + tableHeader + " FROM " + tableName
-		tableValueRow, err := db.Query(tableValueQuery)
-		if err != nil {
+	tableValues := make([][]string, 0)
+	tableValues = append(tableValues, tableHeaders)
+
+	columns := make([]interface{}, len(tableHeaders))
+	columnsPointers := make([]interface{}, len(tableHeaders))
+	for idx := 0; idx < len(tableHeaders); idx++ {
+		columnsPointers[idx] = &columns[idx]
+	}
+
+	tableValuesQuery := "SELECT * FROM " + tableName
+	tableValueRow, err := db.Query(tableValuesQuery)
+	if err != nil {
+		panic(err)
+	}
+	defer tableValueRow.Close()
+
+	for tableValueRow.Next() {
+		if err = tableValueRow.Scan(columnsPointers...); err != nil {
 			panic(err)
 		}
-		defer tableValueRow.Close()
-		for tableValueRow.Next() {
-			var tableValue string
-			if err = tableValueRow.Scan(&tableValue); err != nil {
-				panic(err)
-			}
-			tableValues[tableName][tableHeader] = append(tableValues[tableName][tableHeader], tableValue)
-		}
+		values := make([]string, len(columnsPointers))
+		for idx, _ := range columnsPointers {
+			val := fmt.Sprint(*columnsPointers[idx].(*interface{}))
 
+			values[idx] = val
+		}
+		fmt.Println(values)
+		tableValues = append(tableValues, values)
 	}
+
 	return c.Render(http.StatusOK, "table", tableValues)
 }
 
