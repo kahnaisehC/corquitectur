@@ -1,11 +1,39 @@
 {{define "tables"}}
-    {{range $val := .tableNames}}
-        <a href="/table/{{$val}}">{{$val}}</a>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>corquitecture</title>
+    <link rel="stylesheet" href="tablesStyle.css">
+</head>
+    <body>
+    {{range $tableName, $rows := .}}
+        {{$colLength := len $rows}}
+        {{$rowLength := len $rows}}
+        {{range $row := $rows}}
+            {{$colLength = len $row}}
+            {{break}}
+        {{end}}
+        
+        <div>
+            <a href="/table/{{$tableName}}"><h2>{{$tableName}}</h2></a>
+            <div class="card-table"
+                style="display: grid;
+                        grid-template-columns: repeat({{$colLength}}, auto);
+                        grid-template-rows: repeat({{$rowLength}}, auto)">
+                {{range $row := $rows}}
+                    <!-- <div class="card-row"> -->
+                        {{range $elem := $row}}
+                        <div class="card-item">
+                            {{$elem}}
+                        </div>
+                        {{end}}
+                    <!-- </div> -->
+                {{end}}
+            </div>
+        </div>
     {{end}}
-    <!-- {{range $val := .tableHeaders}}
-        <p>{{$val}}</p>
-    {{end}}
-    {{range $val := .tableValues}}
-        <p>{{$val}}</p>
-    {{end}} -->
+    </body>
+</html>
+
 {{end}}

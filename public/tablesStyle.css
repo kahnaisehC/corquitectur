@@ -1,0 +1,11 @@
+.card-table{
+   display: grid; 
+   
+}
+.card-row{
+
+}
+.card-item{
+    padding: 0.25rem;
+    border: solid black 0.05rem;
+}

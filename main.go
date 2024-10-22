@@ -36,10 +36,10 @@ func cleanString(s string) string {
 			output = fmt.Sprint(output + string(char))
 		}
 	}
-	fmt.Println(output)
 	return output
 }
 
+// TODO: make some strategy pattern for these Table, Tables and JSONTable functions
 func JSONTable(c echo.Context, db *sql.DB) error {
 
 	tableName := c.Param("tableName")
@@ -165,9 +165,7 @@ func Tables(c echo.Context, db *sql.DB) error {
 	if err := tableNamesRows.Err(); err != nil {
 		panic(err)
 	}
-	fmt.Println(tableNames)
-	tableHeaders := make(map[string][]string, 0)
-	// TODO: optimize for database queries
+	tablesHeaders := make(map[string][]string, 0)
 	for _, tableName := range tableNames {
 		tableHeadersQuery := "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "'"
 		tableHeadersRows, err := db.Query(tableHeadersQuery)
@@ -175,45 +173,51 @@ func Tables(c echo.Context, db *sql.DB) error {
 			panic(err)
 		}
 		defer tableHeadersRows.Close()
-		tableHeaders[tableName] = make([]string, 0)
+
+		tablesHeaders[tableName] = make([]string, 0)
 		for tableHeadersRows.Next() {
 			var header string
 			if err := tableHeadersRows.Scan(&header); err != nil {
 				log.Fatal(err)
 			}
-			tableHeaders[tableName] = append(tableHeaders[tableName], header)
+			tablesHeaders[tableName] = append(tablesHeaders[tableName], header)
+		}
+	}
+	tableValues := make(map[string][][]string, 0)
+
+	for _, tableName := range tableNames {
+		rowsQuery := "SELECT * FROM " + tableName + " LIMIT 10"
+		rows, err := db.Query(rowsQuery)
+		if err != nil {
+			panic(err)
+		}
+		defer rows.Close()
+
+		columns := make([]interface{}, len(tablesHeaders[tableName]))
+		columnPointers := make([]interface{}, len(tablesHeaders[tableName]))
+		for idx := 0; idx < len(columns); idx++ {
+			columnPointers[idx] = &columns[idx]
 		}
 
-	}
-	tableValues := make(map[string]map[string][]string, 0)
-	for _, tableName := range tableNames {
-		tableValues[tableName] = make(map[string][]string)
-		for _, tableHeader := range tableHeaders[tableName] {
-			tableValues[tableName][tableHeader] = make([]string, 0)
-			tableValueQuery := "SELECT " + tableHeader + " FROM " + tableName
-			tableValueRow, err := db.Query(tableValueQuery)
+		tableValues[tableName] = make([][]string, 0)
+		tableValues[tableName] = append(tableValues[tableName], tablesHeaders[tableName])
+		for rows.Next() {
+			rowValues := make([]string, 0)
+			err := rows.Scan(columnPointers...)
 			if err != nil {
 				panic(err)
 			}
-			defer tableValueRow.Close()
-			for tableValueRow.Next() {
-				var tableValue string
-				if err = tableValueRow.Scan(&tableValue); err != nil {
-					panic(err)
-				}
-				tableValues[tableName][tableHeader] = append(tableValues[tableName][tableHeader], tableValue)
+			for idx := 0; idx < len(columnPointers); idx++ {
+				vals := fmt.Sprint(*columnPointers[idx].(*interface{}))
+				rowValues = append(rowValues, vals)
 			}
+			tableValues[tableName] = append(tableValues[tableName], rowValues)
+
 		}
 
 	}
 
-	data := map[string]any{
-		"tableNames":   tableNames,
-		"tableHeaders": tableHeaders,
-		"tableValues":  tableValues,
-	}
-
-	return c.Render(http.StatusOK, "tables", data)
+	return c.Render(http.StatusOK, "tables", tableValues)
 }
 
 func Index(c echo.Context) error {
@@ -289,7 +293,6 @@ func upload(c echo.Context, db *sql.DB) error {
 	for i, header := range headers {
 
 		header = strings.TrimSpace(header)
-		fmt.Println(header)
 		columnName := c.FormValue("columnName_" + header)
 		columnType := c.FormValue("columnType_" + header)
 
@@ -395,7 +398,6 @@ func upload(c echo.Context, db *sql.DB) error {
 		}
 
 	}
-	fmt.Println(query)
 
 	// create table with headers
 
