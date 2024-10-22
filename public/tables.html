@@ -16,7 +16,7 @@
         {{end}}
         
         <div>
-            <a href="/table/{{$tableName}}"><h2>{{$tableName}}</h2></a>
+                <a href="/table/{{$tableName}}"><h2 class="table-title">{{$tableName}}</h2></a><a href="/table/api/{{$tableName}}"><small>JSON</small></a>
             <div class="card-table"
                 style="display: grid;
                         grid-template-columns: repeat({{$colLength}}, auto);
