@@ -1,6 +1,6 @@
 .card-table{
    display: grid; 
-   
+    margin-bottom: 2rem;
 }
 .table-title{
     display: inline;
