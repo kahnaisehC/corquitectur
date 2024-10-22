@@ -28,6 +28,7 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 }
 
 // TODO: numeric truncates value
+// TODO: configure bad request page to inform user of the error that was encountered
 func cleanString(s string) string {
 	output := ""
 	for _, char := range s {
@@ -266,8 +267,6 @@ func upload(c echo.Context, db *sql.DB) error {
 		},
 	}
 
-	values := make(map[string]string)
-
 	file, err := c.FormFile("file")
 	if err != nil {
 		panic(err)
@@ -409,7 +408,7 @@ func upload(c echo.Context, db *sql.DB) error {
 	// if err != nil {
 	// 	panic(err)
 	// }
-	return SuccessfullUpload(c, &values)
+	return Tables(c, db)
 
 }
 
