@@ -27,7 +27,7 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-// TODO: corregir cuando el estupido pone comillas en el header
+// TODO: corregir cuando se pone comillas en el header
 // TODO: numeric truncates value
 func cleanString(s string) string {
 	output := ""
