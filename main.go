@@ -82,7 +82,7 @@ func JSONTable(c echo.Context, db *sql.DB) error {
 			panic(err)
 		}
 		values := make([]string, len(columnsPointers))
-		for idx, _ := range columnsPointers {
+		for idx := range columnsPointers {
 			val := fmt.Sprint(*columnsPointers[idx].(*interface{}))
 
 			values[idx] = val
@@ -134,7 +134,7 @@ func Table(c echo.Context, db *sql.DB) error {
 			panic(err)
 		}
 		values := make([]string, len(columnsPointers))
-		for idx, _ := range columnsPointers {
+		for idx := range columnsPointers {
 			val := fmt.Sprint(*columnsPointers[idx].(*interface{}))
 
 			values[idx] = val
