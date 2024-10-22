@@ -16,8 +16,13 @@ options.set("varchar", {
 function cleanString(input){
     let output = ""
     for(let i = 0; i < input.length; i++){
-        if (input.charCodeAt(i) < 127){
-            output += input.charAt(i);
+        charToPush = input.charAt(i)
+        if ((input.charCodeAt(i) >= 48 && input.charCodeAt(i) <= 57) 
+            ||(input.charCodeAt(i) >= 65 && input.charCodeAt(i) <= 90)
+            ||(input.charCodeAt(i) >= 97 && input.charCodeAt(i) <= 122)
+            ||(input.charAt(i) == '_' || input.charAt(i) == '-')){
+            if (input.charAt(i) == '-') charToPush = '_'    
+            output += charToPush;
         }
     }
     return output
@@ -80,12 +85,13 @@ function updateTypeParams(header){
 let fileInput = document.getElementById("fileInput")
 let selectDiv = document.getElementById("selectDiv")
 fileInput.addEventListener("input", function(){
-    let file = fileInput.files["0"]
     fileInput.files["0"]
     .stream()
     .getReader()
     .read()
     .then((r) => {
+        // get Headers
+        console.log(r)
         let cutCharCode = Number('\n'.charCodeAt(0))
         let headersString = ""
         for(let i = 0; r.value[i] != cutCharCode; i++){
@@ -94,7 +100,7 @@ fileInput.addEventListener("input", function(){
 
         let headers = headersString.split(",")
         for(let i = 0; i < headers.length; i++){
-            headers[i] = cleanString(headers[i])
+            headers[i] = cleanString(headers[i]).trim()
         }
         
         let fieldInputList = document.getElementById("selectDiv")

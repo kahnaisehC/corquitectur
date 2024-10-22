@@ -27,12 +27,14 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-// TODO: corregir cuando se pone comillas en el header
 // TODO: numeric truncates value
 func cleanString(s string) string {
 	output := ""
 	for _, char := range s {
-		if char <= '~' {
+		if (char >= 48 && char <= 57) || (char >= 65 && char <= 90) || (char >= 97 && char <= 122) || (char == '_' || char == '-') {
+			if char == '-' || char == ' ' {
+				char = '_'
+			}
 			output = fmt.Sprint(output + string(char))
 		}
 	}
@@ -287,7 +289,7 @@ func upload(c echo.Context, db *sql.DB) error {
 		headers[i] = cleanString(headers[i])
 
 	}
-	tableName := strings.TrimSuffix(file.Filename, ".csv")
+	tableName := cleanString(strings.TrimSuffix(file.Filename, ".csv"))
 	query := "CREATE TABLE IF NOT EXISTS " + tableName + "("
 	insertTemplate := "INSERT INTO " + tableName + "("
 	for i, header := range headers {
@@ -305,6 +307,8 @@ func upload(c echo.Context, db *sql.DB) error {
 	}
 	insertTemplate += ") VALUES("
 	query += ")"
+
+	fmt.Println(query)
 	_, err = db.Exec(query)
 	if err != nil {
 		panic(err)
